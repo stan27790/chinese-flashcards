@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Smart Chinese Flashcards</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fb;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            margin: 0;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+
+        .container {
+            text-align: center;
+            width: 90%;
+            max-width: 500px;
+            margin-top: 50px;
+        }
+
+        /* --- HAMBURGER MENU & SIDEBAR --- */
+        .menu-btn {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 28px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            box-shadow: none;
+            padding: 0;
+            width: auto;
+            color: #333;
+            z-index: 1001;
+        }
+
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -320px; /* Hidden by default */
+            width: 300px;
+            height: 100%;
+            background: white;
+            box-shadow: 5px 0 25px rgba(0,0,0,0.15);
+            transition: left 0.3s ease;
+            z-index: 1000;
+            padding: 20px;
+            box-sizing: border-box;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .sidebar.open { left: 0; }
+
+        .sidebar h2 {
+            margin-top: 40px;
+            border-bottom: 2px solid #f0f2f5;
+            padding-bottom: 10px;
+            color: #333;
+        }
+
+        /* --- FLASHCARD STUDY VIEW --- */
+        .stats-panel {
+            display: flex;
+            justify-content: space-between;
+            background: #fff;
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            font-size: 14px;
+            color: #555;
+        }
+
+        .flashcard-wrapper { perspective: 1000px; margin-bottom: 25px; }
+
+        .card {
+            width: 100%;
+            height: 300px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.4s;
+            cursor: pointer;
+        }
+
+        .card.is-flipped { transform: rotateY(180deg); }
+
+        .card-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 15px;
+            background: white;
+            box-sizing: border-box;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08);
+        }
+
+        .card-front { border: 2px solid #4a90e2; }
+        .character { font-size: 72px; margin: 0; color: #333; }
+        .hint { font-size: 13px; color: #bbb; margin-top: 20px; text-transform: uppercase; }
+        .card-back { background: #4a90e2; color: white; transform: rotateY(180deg); }
+        .pinyin { font-size: 30px; font-weight: bold; margin-bottom: 15px; }
+        .meaning { font-size: 24px; }
+
+        .btn-group { display: flex; justify-content: space-between; gap: 15px; margin-bottom: 30px; }
+
+        button {
+            flex: 1; padding: 15px; font-size: 16px; border: none; border-radius: 10px;
+            cursor: pointer; font-weight: bold; transition: transform 0.1s, background 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        button:active { transform: scale(0.98); }
+        .btn-wrong { background-color: #ff6b6b; color: white; }
+        .btn-right { background-color: #51cf66; color: white; }
+        .level-badge { position: absolute; top: 15px; right: 15px; background: #e7f5ff; color: #228be6; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
+        .card-back .level-badge { background: rgba(255,255,255,0.2); color: white; }
+
+        /* --- ADD WORD FORM & BACKUPS --- */
+        .admin-panel { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); text-align: left; margin-bottom: 20px;}
+        .admin-panel h3 { margin-top: 0; color: #333; border-bottom: 2px solid #f0f2f5; padding-bottom: 8px; }
+        .form-group { margin-bottom: 12px; }
+        .form-group label { display: block; font-size: 13px; color: #666; margin-bottom: 4px; font-weight: 600; }
+        .form-group input { width: 100%; padding: 10px; border: 1px solid #ccd4e0; border-radius: 6px; box-sizing: border-box; }
+        .btn-add { background: #4a90e2; color: white; width: 100%; padding: 12px; border-radius: 6px; }
+
+        /* --- SCROLLABLE LIBRARY ITEMS --- */
+        .library-list { display: flex; flex-direction: column; gap: 10px; margin-top: 10px; }
+        .lib-card {
+            background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px;
+            padding: 12px; cursor: pointer; text-align: center; transition: background 0.2s;
+        }
+        .lib-card:hover { background: #eui; border-color: #4a90e2; }
+        .lib-char { font-size: 24px; font-weight: bold; color: #333; }
+        .lib-details { font-size: 14px; color: #666; margin-top: 4px; display: none; }
+        .lib-card.reveal .lib-details { display: block; }
+
+        /* Backup Utilities inside sidebar */
+        .backup-section { margin-top: auto; padding-top: 20px; border-top: 2px solid #f0f2f5; }
+        .btn-util { background: #666; color: white; padding: 8px; font-size: 12px; margin-bottom: 5px; width: 100%; }
+    </style>
+</head>
+<body>
+
+<button class="menu-btn" onclick="toggleSidebar()">☰</button>
+
+<div class="sidebar" id="sidebar">
+    <h2>🗂️ Library & Tools</h2>
+    
+    <div class="backup-section">
+        <button class="btn-util" onclick="exportDeck()">💾 Export Deck (Backup)</button>
+        <button class="btn-util" onclick="importDeck()">📂 Import Deck</button>
+    </div>
+
+    <h3>Your Saved Words (<span id="lib-count">0</span>)</h3>
+    <div class="library-list" id="library-list">
+        </div>
+</div>
+
+<div class="container" id="main-content" onclick="closeSidebarIfOpen(event)">
+    <div class="stats-panel">
+        <span id="cards-left">0 cards due</span>
+        <span id="streak-info">🔥 Streak: 0</span>
+    </div>
+    
+    <div class="flashcard-wrapper" id="card-area">
+        <div class="card" id="card" onclick="flipCard()">
+            <div class="card-face card-front">
+                <span class="level-badge" id="front-level">Lvl 1</span>
+                <h1 class="character" id="display-char">汉字</h1>
+                <span class="hint">Tap to flip</span>
+            </div>
+            <div class="card-face card-back">
+                <span class="level-badge" id="back-level">Lvl 1</span>
+                <div class="pinyin" id="display-pinyin">Pīnyīn</div>
+                <div class="meaning" id="display-meaning">Meaning</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="btn-group" id="controls-area">
+        <button class="btn-wrong" onclick="handleAnswer(false)">Forgot ❌</button>
+        <button class="btn-right" onclick="handleAnswer(true)">Got it! 👍</button>
+    </div>
+
+    <div class="admin-panel">
+        <h3>➕ Add New Flashcard</h3>
+        <div class="form-group">
+            <label>Chinese Characters (Hanzi)</label>
+            <input type="text" id="input-char" placeholder="e.g., 猫">
+        </div>
+        <div class="form-group">
+            <label>Pinyin</label>
+            <input type="text" id="input-pinyin" placeholder="e.g., māo">
+        </div>
+        <div class="form-group">
+            <label>English Meaning</label>
+            <input type="text" id="input-meaning" placeholder="e.g., Cat">
+        </div>
+        <button class="btn-add" onclick="addNewWord()">Add to My Deck</button>
+    </div>
+</div>
+
+<script>
+    const starterWords = [
+        { char: "你好", pinyin: "nǐ hǎo", meaning: "Hello" },
+        { char: "谢谢", pinyin: "xièxie", meaning: "Thank you" }
+    ];
+
+    let deck = [];
+    let currentCard = null;
+    let streak = 0;
+
+    const cardEl = document.getElementById('card');
+    const charEl = document.getElementById('display-char');
+    const pinyinEl = document.getElementById('display-pinyin');
+    const meaningEl = document.getElementById('display-meaning');
+    const frontLvlEl = document.getElementById('front-level');
+    const backLvlEl = document.getElementById('back-level');
+    const leftEl = document.getElementById('cards-left');
+    const streakEl = document.getElementById('streak-info');
+    const sidebarEl = document.getElementById('sidebar');
+    const libraryListEl = document.getElementById('library-list');
+    const libCountEl = document.getElementById('lib-count');
+
+    initDatabase();
+    queueNextCard();
+    renderLibrary();
+
+    function initDatabase() {
+        const savedDeck = localStorage.getItem('custom_user_deck');
+        const savedStreak = localStorage.getItem('custom_user_streak');
+        if(savedStreak) streak = parseInt(savedStreak);
+        
+        if (savedDeck) {
+            deck = JSON.parse(savedDeck);
+        } else {
+            deck = starterWords.map(word => ({ ...word, level: 1, nextReview: Date.now() }));
+            saveToStorage();
+        }
+    }
+
+    function saveToStorage() {
+        localStorage.setItem('custom_user_deck', JSON.stringify(deck));
+        localStorage.setItem('custom_user_streak', streak.toString());
+        renderLibrary();
+    }
+
+    function toggleSidebar() { sidebarEl.classList.toggle('open'); }
+    function closeSidebarIfOpen(e) { if(sidebarEl.classList.contains('open')) sidebarEl.classList.remove('open'); }
+
+    function flipCard() { if(deck.length === 0) return; cardEl.classList.toggle('is-flipped'); }
+
+    function queueNextCard() {
+        if (deck.length === 0) { return; }
+        const now = Date.now();
+        let dueCards = deck.filter(card => card.nextReview <= now);
+        if (dueCards.length === 0) dueCards = deck.filter(card => card.level < 4);
+        if (dueCards.length === 0) dueCards = deck;
+
+        const randomIndex = Math.floor(Math.random() * dueCards.length);
+        currentCard = dueCards[randomIndex];
+
+        charEl.innerText = currentCard.char;
+        pinyinEl.innerText = currentCard.pinyin;
+        meaningEl.innerText = currentCard.meaning;
+        frontLvlEl.innerText = `Lvl ${currentCard.level}`;
+        backLvlEl.innerText = `Lvl ${currentCard.level}`;
+        
+        const totalDueCount = deck.filter(card => card.nextReview <= Date.now()).length;
+        leftEl.innerText = `⚡ ${totalDueCount} cards due`;
+        streakEl.innerText = `🔥 Streak: ${streak}`;
+    }
+
+    function handleAnswer(wasCorrect) {
+        if (!currentCard) return;
+        if (wasCorrect) { streak++; if (currentCard.level < 5) currentCard.level++; } 
+        else { streak = 0; currentCard.level = 1; }
+
+        const intervals = [0, 30000, 300000, 3600000, 86400000, 345600000];
+        currentCard.nextReview = Date.now() + intervals[currentCard.level];
+        saveToStorage();
+
+        if (cardEl.classList.contains('is-flipped')) {
+            cardEl.classList.remove('is-flipped');
+            setTimeout(() => { queueNextCard(); }, 250);
+        } else { queueNextCard(); }
+    }
+
+    function addNewWord() {
+        const charInput = document.getElementById('input-char');
+        const pinyinInput = document.getElementById('input-pinyin');
+        const meaningInput = document.getElementById('input-meaning');
+
+        if (!charInput.value || !pinyinInput.value || !meaningInput.value) {
+            alert("Fill in all fields!"); return;
+        }
+
+        deck.push({ char: charInput.value.trim(), pinyin: pinyinInput.value.trim(), meaning: meaningInput.value.trim(), level: 1, nextReview: Date.now() });
+        saveToStorage();
+
+        charInput.value = ""; pinyinInput.value = ""; meaningInput.value = "";
+        queueNextCard();
+    }
+
+    // --- RENDER SIDEBAR LIST ---
+    function renderLibrary() {
+        libraryListEl.innerHTML = "";
+        libCountEl.innerText = deck.length;
+        deck.forEach(word => {
+            const div = document.createElement('div');
+            div.className = "lib-card";
+            div.onclick = () => div.classList.toggle('reveal');
+            div.innerHTML = `
+                <div class="lib-char">${word.char}</div>
+                <div class="lib-details">
+                    <strong>Pinyin:</strong> ${word.pinyin}<br>
+                    <strong>Meaning:</strong> ${word.meaning}<br>
+                    <small>SRS Level: ${word.level}</small>
+                </div>
+            `;
+            libraryListEl.appendChild(div);
+        });
+    }
+
+    // --- DATA PORTABILITY HELPERS ---
+    function exportDeck() {
+        const dataStr = JSON.stringify(deck);
+        prompt("Copy this text block and save it anywhere to backup your cards:", dataStr);
+    }
+
+    function importDeck() {
+        const input = prompt("Paste your exported text block here:");
+        if (!input) return;
+        try {
+            const parsed = JSON.parse(input);
+            if(Array.isArray(parsed)) {
+                deck = parsed;
+                saveToStorage();
+                queueNextCard();
+                alert("Deck imported successfully!");
+            }
+        } catch(e) { alert("Invalid data format."); }
+    }
+</script>
+</body>
+</html>

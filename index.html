@@ -18,6 +18,9 @@
         .rotate-y-180 { transform: rotateY(180deg); }
         .card-transition { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         
+        /* FIX: Added missing flip class rotation handler */
+        .is-flipped { transform: rotateY(180deg); }
+        
         /* Smooth transitions for view switching */
         .view-panel {
             transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
@@ -104,9 +107,8 @@
 
     <script>
         // ================= SUPABASE INITIALIZATION =================
-        // Replace these placeholders with your real credentials from your Supabase Dashboard API tab
-       const SUPABASE_URL = "https://gjhgufytyjzhqhowvemj.supabase.co";
-const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqaGd1Znl0eWp6aHFob3d2ZW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTk1MjksImV4cCI6MjA5NTQ3NTUyOX0.Q46ZZG17bqkrF2Uydw6ey-gI1gkfLFGJuq8Hawk5_SU";
+        const SUPABASE_URL = "https://gjhgufytyjzhqhowvemj.supabase.co";
+        const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdqaGd1Znl0eWp6aHFob3d2ZW1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzk4OTk1MjksImV4cCI6MjA5NTQ3NTUyOX0.Q46ZZG17bqkrF2Uydw6ey-gI1gkfLFGJuq8Hawk5_SU";
         
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
@@ -209,7 +211,6 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
             const intervals = [0, 30000, 300000, 3600000, 86400000, 345600000];
             const nextReviewDate = new Date(Date.now() + intervals[currentCard.level]).toISOString();
 
-            // Direct Real-time mutation updates directly targeting cloud infrastructure records
             const { error } = await supabase
                 .from('flashcards')
                 .update({ level: currentCard.level, next_review: nextReviewDate })
@@ -217,7 +218,6 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
             if (error) console.error("Could not sync response update:", error);
 
-            // Optimistic memory assignment updates
             currentCard.next_review = nextReviewDate;
 
             if (cardEl.classList.contains('is-flipped')) {
@@ -241,7 +241,6 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
 
             const nextReviewDate = new Date().toISOString();
 
-            // Insert straight into your global internet cloud table
             const { data, error } = await supabase
                 .from('flashcards')
                 .insert([{ char, pinyin, meaning, level: 1, next_review: nextReviewDate }])
@@ -267,7 +266,6 @@ const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZ
                 const card = document.createElement('div');
                 card.className = "bg-white border border-slate-100 rounded-2xl p-5 text-center shadow-sm cursor-pointer hover:border-blue-400 hover:shadow-md transition-all duration-200 group flex flex-col justify-center min-h-[110px]";
                 
-                // Toggle show/hide library text inside elements without total card layouts flip rotations
                 card.onclick = () => {
                     const TargetDetails = card.querySelector('.lib-details');
                     const TargetMain = card.querySelector('.lib-main-char');

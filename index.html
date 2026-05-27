@@ -17,11 +17,8 @@
         .backface-hidden { backface-visibility: hidden; }
         .rotate-y-180 { transform: rotateY(180deg); }
         .card-transition { transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-        
-        /* FIX: Added missing flip class rotation handler */
         .is-flipped { transform: rotateY(180deg); }
         
-        /* Smooth transitions for view switching */
         .view-panel {
             transition: opacity 0.25s ease-in-out, transform 0.25s ease-in-out;
         }
@@ -100,7 +97,7 @@
             </div>
             
             <div id="library-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto pr-1">
-                </div>
+            </div>
         </div>
 
     </main>
@@ -186,7 +183,8 @@
             const randomIndex = Math.floor(Math.random() * dueCards.length);
             currentCard = dueCards[randomIndex];
 
-            charEl.innerText = currentCard.char;
+            // FIXED: Using .character instead of .char to match your database schema
+            charEl.innerText = currentCard.character || currentCard.char || "空";
             pinyinEl.innerText = currentCard.pinyin;
             meaningEl.innerText = currentCard.meaning;
             frontLvlEl.innerText = `Lvl ${currentCard.level}`;
@@ -233,17 +231,18 @@
             const pinyinInput = document.getElementById('input-pinyin');
             const meaningInput = document.getElementById('input-meaning');
 
-            const char = charInput.value.trim();
+            const character = charInput.value.trim();
             const pinyin = pinyinInput.value.trim();
             const meaning = meaningInput.value.trim();
 
-            if (!char || !pinyin || !meaning) { alert("Fill out all parameters!"); return; }
+            if (!character || !pinyin || !meaning) { alert("Fill out all parameters!"); return; }
 
             const nextReviewDate = new Date().toISOString();
 
+            // FIXED: Key matching 'character' schema parameter
             const { data, error } = await supabase
                 .from('flashcards')
-                .insert([{ char, pinyin, meaning, level: 1, next_review: nextReviewDate }])
+                .insert([{ character, pinyin, meaning, level: 1, next_review: nextReviewDate }])
                 .select();
 
             if (error) {
@@ -273,8 +272,11 @@
                     TargetMain.classList.toggle('hidden');
                 };
 
+                // FIXED: Adjusted to word.character reference
+                const wordDisplay = word.character || word.char || "";
+
                 card.innerHTML = `
-                    <div class="lib-main-char text-3xl font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${word.char}</div>
+                    <div class="lib-main-char text-3xl font-bold text-slate-700 group-hover:text-blue-600 transition-colors">${wordDisplay}</div>
                     <div class="lib-details hidden text-left flex flex-col gap-0.5 justify-center h-full">
                         <div class="text-xs font-semibold uppercase tracking-wider text-slate-400">Pinyin</div>
                         <div class="text-sm font-bold text-slate-700 mb-2">${word.pinyin}</div>
